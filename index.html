@@ -1,3 +1,4 @@
+```
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,6 +11,9 @@
     <title>Unsent Notes - janoona & aloo2a</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
@@ -163,7 +167,9 @@
                 the unsent project
             </span>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 flex-wrap justify-end">
+            <button onclick="toggleInboxModal()" class="mobile-action px-3 py-2 rounded-full glass-box text-sm font-semibold">Inbox (<span id="inboxCount">0</span>)</button>
+            <button onclick="signOutUser()" class="mobile-action px-3 py-2 rounded-full glass-box text-sm font-semibold">Log out</button>
             <button onclick="toggleDraftsModal()" class="mobile-action px-4 py-2 rounded-full glass-box hover:bg-white/10 transition text-sm font-semibold flex items-center gap-2">
                 <i class="fa-solid fa-file-pen text-pink-300"></i>
                 <span>Drafts (<span id="draftCount">0</span>)</span>
@@ -175,6 +181,22 @@
         </div>
     </header>
 
+    <div id="loginOverlay" class="fixed inset-0 bg-[#1e0836] z-[100] flex items-center justify-center p-5">
+      <div class="glass-box rounded-3xl p-7 w-full max-w-md text-center">
+        <h2 class="text-3xl font-black mb-2">Unsent Notes 💜</h2>
+        <p class="text-purple-200 text-sm mb-5">Sign in with one of your two Firebase accounts.</p>
+        <input id="loginEmail" type="email" autocomplete="username" placeholder="Email" class="w-full mb-3 p-3 rounded-xl text-black" />
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" class="w-full mb-3 p-3 rounded-xl text-black" />
+        <button id="loginButton" onclick="signInUser()" class="w-full rounded-xl bg-purple-600 hover:bg-purple-500 py-3 font-bold">Sign in</button>
+        <p id="loginError" role="alert" class="text-pink-200 text-sm mt-3"></p>
+      </div>
+    </div>
+    <div id="inboxModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+      <div class="glass-box w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold">Your Inbox 💌</h3><button onclick="toggleInboxModal()" class="px-3 py-2 rounded-full bg-white/10">Close</button></div>
+        <div id="inboxGrid" class="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
+    </div>
     <!-- MAIN CONTENT CONTAINER -->
     <main class="flex-grow flex items-center justify-center p-4 md:p-8 relative">
 
@@ -184,7 +206,7 @@
                 Who is this letter for?
             </h1>
             <p class="text-purple-200/80 mb-10 max-w-md text-sm md:text-base">
-                Select a person to write an anonymous unsent note. It will automatically be delivered to their archive.
+                Choose who to write to. Your note will arrive in their private in-app inbox.
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl px-4">
@@ -277,12 +299,12 @@
 
                 <!-- BOTTOM FOOTER -->
                 <div class="flex items-center justify-between pt-2 mt-1 border-t-2 border-black text-lg font-black">
-                    <!-- Send Button -->
+                    <!-- Save and send buttons -->
                     <button onclick="saveDraft()" class="mobile-action hover:opacity-75 transition-opacity px-1 active:scale-95 text-xs sm:text-sm">
                         Save Draft
                     </button>
-                    <button onclick="shareLetter()" class="mobile-action hover:opacity-75 transition-opacity px-1 active:scale-95">
-                        Share ↗
+                    <button id="sendNoteButton" onclick="sendLetter()" class="mobile-action hover:opacity-75 transition-opacity px-1 active:scale-95">
+                        Send Note
                     </button>
 
                     <!-- Hashtag -->
@@ -308,7 +330,7 @@
             <div class="flex justify-between items-center pb-4 border-b border-purple-800/50 mb-4">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-box-archive text-purple-400 text-xl"></i>
-                    <div><h3 class="text-xl font-bold text-white">Shared Archive</h3><p class="text-xs text-purple-200/70">History stored on this device; sharing is done through your phone's share sheet.</p></div>
+                    <div><h3 class="text-xl font-bold text-white">Sent Archive</h3><p class="text-xs text-purple-200/70">Sent notes from this account (online); older device notes remain in local storage.</p></div>
                 </div>
                 <button onclick="toggleFeedModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
                     <i class="fa-solid fa-xmark"></i>
@@ -337,7 +359,7 @@
                     <i class="fa-solid fa-lock text-pink-300 text-xl"></i>
                     <div>
                         <h3 class="text-xl font-bold text-white">Private Drafts</h3>
-                        <p class="text-xs text-purple-200/70">Saved on this device/browser only</p>
+                        <p class="text-xs text-purple-200/70">Saved on this browser, separated by signed-in account</p>
                     </div>
                 </div>
                 <button onclick="toggleDraftsModal()" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white" aria-label="Close drafts">
@@ -361,11 +383,107 @@
 
     <!-- JavaScript Application Logic. Drafts/archive use this browser's localStorage; they do not sync across devices. -->
     <script>
+        // ===== CONFIG: REPLACE THESE TWO VALUES WITH THE FULL UIDs FROM FIREBASE AUTHENTICATION =====
+        // janoona is the person who should RECEIVE notes addressed to janoona.
+        // aloo2a is the person who should RECEIVE notes addressed to aloo2a.
+        const PERSON_JANOONA_UID = 'WPkgeR5c8whHqYRjbxyjmsrmTYr2';
+        const PERSON_ALOO2A_UID = 'D2B5jveCRVhpD4WFjLdcO7qCDzA3';
+        // Firebase web app config copied from your Firebase console screenshot. Verify it against Project Settings.
+        const firebaseConfig = {
+          apiKey: 'AIzaSyChk47s0X--g8B52-L83Iki9blaoXo5MPU',
+          authDomain: 'ajsecretnotes.firebaseapp.com',
+          projectId: 'ajsecretnotes',
+          storageBucket: 'ajsecretnotes.firebasestorage.app',
+          messagingSenderId: '335106363107',
+          appId: '1:335106363107:web:c4f60f853a1642335cbfd6'
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        function isConfigured() {
+          return !PERSON_JANOONA_UID.startsWith('PASTE_') && !PERSON_ALOO2A_UID.startsWith('PASTE_') && PERSON_JANOONA_UID !== PERSON_ALOO2A_UID;
+        }
+        function draftStorageKey() { return 'unsent_drafts_' + (auth.currentUser?.uid || 'not_signed_in'); }
+        function safeColor(color) { return ['#38C944','#FF5E5E','#4DA1FF','#FFB800','#E062FF'].includes(color) ? color : '#38C944'; }
+        function formatDate(ts) { return ts?.toDate ? ts.toDate().toLocaleString() : 'Just now'; }
+        async function signInUser() {
+          const email = document.getElementById('loginEmail').value.trim();
+          const password = document.getElementById('loginPassword').value;
+          const error = document.getElementById('loginError'); error.textContent = '';
+          try {
+            await auth.signInWithEmailAndPassword(email, password);
+          } catch(e) { error.textContent = 'Sign-in failed. Check your email and password.'; }
+        }
+        async function signOutUser() {
+          await auth.signOut();
+        }
+        function handleAuthChange(user) {
+          if (unsubscribeSent) { unsubscribeSent(); unsubscribeSent = null; }
+          if (unsubscribeInbox) { unsubscribeInbox(); unsubscribeInbox = null; }
+          sentMessages = []; inboxMessages = []; drafts = [];
+          updateSentCount(); updateInboxCount(); updateDraftCount(); renderArchive(); renderDrafts(); renderInbox();
+          document.getElementById('feedModal').classList.add('hidden');
+          document.getElementById('draftsModal').classList.add('hidden');
+          document.getElementById('inboxModal').classList.add('hidden');
+          showHomeScreen();
+          document.getElementById('loginOverlay').classList.toggle('hidden', !!user);
+          if (!user) return;
+          if (![PERSON_JANOONA_UID, PERSON_ALOO2A_UID].includes(user.uid)) {
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('loginError').textContent = 'This account is not one of the two approved users.';
+            auth.signOut(); return;
+          }
+          drafts = readStoredArray(draftStorageKey()); updateDraftCount(); renderDrafts();
+          // Legacy local drafts are preserved, not automatically assigned to a different account.
+          const legacy = readStoredArray('unsent_drafts');
+          if (legacy.length && !localStorage.getItem('unsent_legacy_prompted_' + user.uid)) {
+            localStorage.setItem('unsent_legacy_prompted_' + user.uid, '1');
+            if (confirm('Found ' + legacy.length + ' older draft(s) on this browser. Import them into this signed-in account? Only choose OK if they belong to you.')) {
+              drafts = [...drafts, ...legacy.map(d => ({...d, id: String(d.id) + '-import-' + Date.now()}))];
+              persistArray(draftStorageKey(), drafts); updateDraftCount(); renderDrafts();
+              // Remove the old shared-browser copy after successful import.
+              localStorage.removeItem('unsent_drafts');
+            }
+          }
+          unsubscribeSent = db.collection('notes').where('senderId','==',user.uid).onSnapshot(snapshot => {
+            sentMessages = snapshot.docs.map(doc => {
+              const d = doc.data(); return {id:doc.id, recipient:d.recipientId === PERSON_JANOONA_UID ? 'janoona':'aloo2a', text:d.text, color:'#38C944', timestamp:formatDate(d.createdAt)};
+            });
+            updateSentCount(); renderArchive();
+          }, e => { console.error(e); showToast('Sent archive could not load.', 'warning'); });
+          unsubscribeInbox = db.collection('notes').where('recipientId','==',user.uid).onSnapshot(snapshot => {
+            inboxMessages = snapshot.docs.map(doc => ({id:doc.id, ...doc.data()}));
+            updateInboxCount(); renderInbox();
+          }, e => { console.error(e); showToast('Inbox could not load.', 'warning'); });
+        }
+        function updateInboxCount() { document.getElementById('inboxCount').textContent = inboxMessages.length; }
+        function toggleInboxModal() {
+          const modal = document.getElementById('inboxModal');
+          const opening = modal.classList.contains('hidden');
+          modal.classList.toggle('hidden'); modal.classList.toggle('flex',opening);
+          if (opening) renderInbox();
+        }
+        function renderInbox() {
+          const grid = document.getElementById('inboxGrid'); grid.replaceChildren();
+          if (!inboxMessages.length) { grid.textContent = 'No notes received yet. 💜'; return; }
+          [...inboxMessages].sort((a,b) => (b.createdAt?.seconds || 0)-(a.createdAt?.seconds || 0)).forEach(note => {
+            const card = document.createElement('div'); card.className = 'unsent-frame p-4 rounded-lg';
+            const from = document.createElement('p'); from.className = 'font-bold text-sm mb-2';
+            from.textContent = 'From: ' + (note.senderId === PERSON_JANOONA_UID ? 'janoona' : 'aloo2a');
+            const body = document.createElement('p'); body.className = 'bg-[#38C944] p-4 whitespace-pre-wrap break-words font-bold min-h-32'; body.textContent = note.text;
+            const date = document.createElement('p'); date.className = 'text-xs mt-2'; date.textContent = formatDate(note.createdAt);
+            card.append(from,body,date); grid.appendChild(card);
+          });
+        }
+
         // State management
         let currentRecipient = 'janoona';
         let currentColor = '#38C944'; // Default vibrant green from image
-        let sentMessages = readStoredArray('unsent_messages');
-        let drafts = readStoredArray('unsent_drafts');
+        let sentMessages = [];
+        let inboxMessages = [];
+        let unsubscribeSent = null;
+        let unsubscribeInbox = null;
+        let drafts = [];
         let editingDraftId = null;
         let currentFilter = 'all';
 
@@ -389,10 +507,13 @@
 
         // Initialize UI on load
         window.onload = function() {
-            updateSentCount();
-            updateDraftCount();
-            renderArchive();
-            renderDrafts();
+            updateSentCount(); updateDraftCount(); renderArchive(); renderDrafts();
+            if (!isConfigured()) {
+                document.getElementById('loginError').textContent = 'Setup needed: add both Firebase UIDs in the CONFIG section of this file.';
+                document.getElementById('loginButton').disabled = true;
+            } else {
+                auth.onAuthStateChanged(handleAuthChange);
+            }
         };
 
         // Open Letter Editor View
@@ -462,7 +583,7 @@
             };
             if (existingIndex >= 0) drafts[existingIndex] = draft;
             else drafts.unshift(draft);
-            if (!persistArray('unsent_drafts', drafts)) return;
+            if (!persistArray(draftStorageKey(), drafts)) return;
             editingDraftId = null;
             updateDraftCount();
             renderDrafts();
@@ -511,15 +632,11 @@
                 edit.className = 'archive-action text-white';
                 edit.textContent = 'Edit';
                 edit.onclick = () => editDraft(draft.id);
-                const share = document.createElement('button');
-                share.className = 'archive-action text-white';
-                share.textContent = 'Share…';
-                share.onclick = () => shareDraft(draft.id);
                 const del = document.createElement('button');
                 del.className = 'archive-action text-pink-200';
                 del.textContent = 'Delete';
                 del.onclick = () => deleteDraft(draft.id);
-                actions.append(edit, share, del);
+                actions.append(edit, del);
                 card.append(heading, preview, actions);
                 container.appendChild(card);
             });
@@ -548,89 +665,32 @@
         function deleteDraft(id) {
             if (!confirm('Delete this private draft from this device?')) return;
             drafts = drafts.filter(d => d.id !== id);
-            if (persistArray('unsent_drafts', drafts)) {
+            if (persistArray(draftStorageKey(), drafts)) {
                 updateDraftCount();
                 renderDrafts();
                 showToast('Draft deleted.');
             }
         }
 
-        async function shareDraft(id) {
-            const draft = drafts.find(d => d.id === id);
-            if (!draft) return;
-            const payload = { title: 'Unsent Note for ' + draft.recipient, text: draft.text };
+        async function sendLetter() {
+            if (!auth.currentUser || !isConfigured()) return showToast('Please sign in first.', 'warning');
+            const text = document.getElementById('noteTextInput').value.trim();
+            if (!text) return showToast('Write a note first.', 'warning');
+            const recipientId = currentRecipient === 'janoona' ? PERSON_JANOONA_UID : PERSON_ALOO2A_UID;
+            if (recipientId === auth.currentUser.uid) return showToast('Choose your partner, not yourself.', 'warning');
+            const btn = document.getElementById('sendNoteButton');
+            btn.disabled = true; btn.textContent = 'Sending…';
             try {
-                if (navigator.share) await navigator.share(payload);
-                else if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(payload.title + '\\n\\n' + payload.text);
-                    showToast('Note copied. Paste it into a message.');
-                } else {
-                    window.prompt('Copy your note:', payload.title + '\\n\\n' + payload.text);
+                await db.collection('notes').add({ senderId: auth.currentUser.uid, recipientId, text, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                if (editingDraftId !== null) {
+                    drafts = drafts.filter(d => d.id !== editingDraftId);
+                    persistArray(draftStorageKey(), drafts); editingDraftId = null;
+                    updateDraftCount(); renderDrafts();
                 }
-            } catch (error) {
-                if (error.name !== 'AbortError') showToast('Could not open sharing options.', 'warning');
-            }
-        }
-
-        // Opens the phone/browser share sheet. This does not automatically deliver to a recipient.
-        async function shareLetter() {
-            const textarea = document.getElementById('noteTextInput');
-            const text = textarea.value.trim();
-            if (!text) {
-                showToast('Write a message before sharing.', 'warning');
-                return;
-            }
-            const payload = { title: 'Unsent Note for ' + currentRecipient, text };
-            try {
-                if (navigator.share) {
-                    await navigator.share(payload);
-                    showToast('Share sheet opened.');
-                } else if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(payload.title + '\\n\\n' + text);
-                    showToast('Copied. Paste it into a message.');
-                } else {
-                    window.prompt('Copy your note:', payload.title + '\\n\\n' + text);
-                }
-            } catch (error) {
-                if (error.name !== 'AbortError') showToast('Could not open sharing options.', 'warning');
-            }
-        }
-
-        // Send Letter Function with Animation
-        function sendLetter() {
-            const textarea = document.getElementById('noteTextInput');
-            const text = textarea.value.trim();
-
-            if (!text) {
-                showToast("Please write a message before sending!", "warning");
-                return;
-            }
-
-            const frame = document.getElementById('unsentFrame');
-            
-            // Trigger animation
-            frame.classList.add('sending-anim');
-
-            // Create message record
-            const newMessage = {
-                id: Date.now(),
-                recipient: currentRecipient,
-                text: text,
-                color: currentColor,
-                timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-            };
-
-            // Save message
-            sentMessages.unshift(newMessage);
-            localStorage.setItem('unsent_messages', JSON.stringify(sentMessages));
-            updateSentCount();
-
-            // After animation completes
-            setTimeout(() => {
-                showToast(`Note saved to this device’s shared archive.`);
-                showHomeScreen();
-                renderArchive();
-            }, 750);
+                document.getElementById('noteTextInput').value = '';
+                showHomeScreen(); showToast('Note delivered to your partner’s inbox!');
+            } catch (e) { console.error(e); showToast('Could not send: ' + e.message, 'warning'); }
+            finally { btn.disabled = false; btn.textContent = 'Send Note'; }
         }
 
         // Show Toast Message
@@ -656,7 +716,9 @@
         // Toggle Sent Archive Modal
         function toggleFeedModal() {
             const modal = document.getElementById('feedModal');
+            const opening = modal.classList.contains('hidden');
             modal.classList.toggle('hidden');
+            modal.classList.toggle('flex', opening);
         }
 
         // Filter Archive Messages
@@ -702,34 +764,19 @@
                 card.innerHTML = `
                     <div class="flex items-center justify-between pb-1 border-b border-black font-bold">
                         <span class="bg-black text-white px-1 text-[10px]">ABC</span>
-                        <span class="text-xs">To: ${msg.recipient}</span>
+                        <span class="text-xs">To: ${escapeHtml(msg.recipient)}</span>
                         <i class="fa-solid fa-envelope text-xs"></i>
                     </div>
-                    <div class="flex-grow my-1 p-2 font-bold text-sm text-black overflow-y-auto whitespace-pre-wrap break-words" style="background-color: ${msg.color}; font-family: 'Space Grotesk', sans-serif;">
+                    <div class="flex-grow my-1 p-2 font-bold text-sm text-black overflow-y-auto whitespace-pre-wrap break-words" style="background-color: ${safeColor(msg.color)}; font-family: 'Space Grotesk', sans-serif;">
                         ${escapeHtml(msg.text)}
                     </div>
                     <div class="flex items-center justify-between pt-1 border-t border-black text-[10px] font-bold">
                         <span>#unsentproject</span>
-                        <span class="opacity-70">${msg.timestamp}</span>
+                        <span class="opacity-70">${escapeHtml(msg.timestamp)}</span>
                     </div>
                 `;
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'archive-action mt-2 self-start text-red-700 bg-white';
-                deleteButton.textContent = 'Delete from archive';
-                deleteButton.onclick = () => deleteArchivedMessage(msg.id);
-                card.appendChild(deleteButton);
                 container.appendChild(card);
             });
-        }
-
-        function deleteArchivedMessage(id) {
-            if (!confirm('Delete this archived note from this device?')) return;
-            sentMessages = sentMessages.filter(m => m.id !== id);
-            if (persistArray('unsent_messages', sentMessages)) {
-                updateSentCount();
-                renderArchive();
-                showToast('Archived note deleted.');
-            }
         }
 
         // Helper to prevent HTML injection
@@ -739,3 +786,4 @@
     </script>
 </body>
 </html>
+```
