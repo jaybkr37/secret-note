@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Unsent Notes">
-    <title>Unsent Notes - janoona & aloo2a</title>
+    <title>Unsent Notes - Hedgehog & Kuwala</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -210,33 +210,33 @@
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl px-4">
-                <!-- Box 1: janoona -->
+                <!-- Box 1: Hedgehog -->
                 <div onclick="openLetterEditor('janoona')" class="select-card cursor-pointer glass-box p-8 rounded-2xl border border-purple-400/30 flex flex-col items-center justify-center group relative overflow-hidden">
                     <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-purple-500/20 rounded-full blur-2xl group-hover:bg-purple-500/40 transition"></div>
                     
                     <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-3xl font-black shadow-lg mb-6 group-hover:scale-110 transition duration-300">
-                        J
+                        🦔
                     </div>
-                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">janoona</h2>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Hedgehog</h2>
                     <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-4">Click to write note</p>
                     
                     <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-xs font-medium text-purple-200 group-hover:bg-white/20 transition">
-                        <i class="fa-solid fa-pen-nib text-xs"></i> Write to janoona
+                        <i class="fa-solid fa-pen-nib text-xs"></i> Write to Hedgehog
                     </span>
                 </div>
 
-                <!-- Box 2: aloo2a -->
+                <!-- Box 2: Kuwala -->
                 <div onclick="openLetterEditor('aloo2a')" class="select-card cursor-pointer glass-box p-8 rounded-2xl border border-purple-400/30 flex flex-col items-center justify-center group relative overflow-hidden">
                     <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-pink-500/20 rounded-full blur-2xl group-hover:bg-pink-500/40 transition"></div>
                     
                     <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-3xl font-black shadow-lg mb-6 group-hover:scale-110 transition duration-300">
-                        A
+                        🐨
                     </div>
-                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">aloo2a</h2>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Kuwala</h2>
                     <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-4">Click to write note</p>
                     
                     <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-xs font-medium text-purple-200 group-hover:bg-white/20 transition">
-                        <i class="fa-solid fa-pen-nib text-xs"></i> Write to aloo2a
+                        <i class="fa-solid fa-pen-nib text-xs"></i> Write to Kuwala
                     </span>
                 </div>
             </div>
@@ -270,7 +270,7 @@
                     <!-- To: Recipient Label -->
                     <div class="text-xl font-bold flex items-center gap-1">
                         <span>To:</span>
-                        <span id="recipientDisplayName" class="underline decoration-2">janoona</span>
+                        <span id="recipientDisplayName" class="underline decoration-2">Hedgehog</span>
                     </div>
 
                     <!-- Envelope Icon -->
@@ -340,8 +340,8 @@
             <!-- Feed Tabs -->
             <div class="flex gap-2 mb-4 border-b border-white/10 pb-2">
                 <button onclick="filterArchive('all')" id="tab-all" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white">All Notes</button>
-                <button onclick="filterArchive('janoona')" id="tab-janoona" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20">To janoona</button>
-                <button onclick="filterArchive('aloo2a')" id="tab-aloo2a" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20">To aloo2a</button>
+                <button onclick="filterArchive('janoona')" id="tab-janoona" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20">To Hedgehog</button>
+                <button onclick="filterArchive('aloo2a')" id="tab-aloo2a" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20">To Kuwala</button>
             </div>
 
             <!-- Messages Grid -->
@@ -403,6 +403,7 @@
         function isConfigured() {
           return !PERSON_JANOONA_UID.startsWith('PASTE_') && !PERSON_ALOO2A_UID.startsWith('PASTE_') && PERSON_JANOONA_UID !== PERSON_ALOO2A_UID;
         }
+        function displayName(recipient) { return recipient === 'janoona' ? 'Hedgehog' : recipient === 'aloo2a' ? 'Kuwala' : recipient; }
         function draftStorageKey() { return 'unsent_drafts_' + (auth.currentUser?.uid || 'not_signed_in'); }
         function safeColor(color) { return ['#38C944','#FF5E5E','#4DA1FF','#FFB800','#E062FF'].includes(color) ? color : '#38C944'; }
         function formatDate(ts) { return ts?.toDate ? ts.toDate().toLocaleString() : 'Just now'; }
@@ -469,7 +470,7 @@
           [...inboxMessages].sort((a,b) => (b.createdAt?.seconds || 0)-(a.createdAt?.seconds || 0)).forEach(note => {
             const card = document.createElement('div'); card.className = 'unsent-frame p-4 rounded-lg';
             const from = document.createElement('p'); from.className = 'font-bold text-sm mb-2';
-            from.textContent = 'From: ' + (note.senderId === PERSON_JANOONA_UID ? 'janoona' : 'aloo2a');
+            from.textContent = 'From: ' + (note.senderId === PERSON_JANOONA_UID ? 'Hedgehog' : 'Kuwala');
             const body = document.createElement('p'); body.className = 'bg-[#38C944] p-4 whitespace-pre-wrap break-words font-bold min-h-32'; body.textContent = note.text;
             const date = document.createElement('p'); date.className = 'text-xs mt-2'; date.textContent = formatDate(note.createdAt);
             card.append(from,body,date); grid.appendChild(card);
@@ -520,7 +521,7 @@
         function openLetterEditor(recipient) {
             editingDraftId = null;
             currentRecipient = recipient;
-            document.getElementById('recipientDisplayName').innerText = recipient;
+            document.getElementById('recipientDisplayName').innerText = displayName(recipient);
             
             // Switch views smoothly
             const selectScreen = document.getElementById('selectionScreen');
@@ -621,7 +622,7 @@
                 const heading = document.createElement('div');
                 heading.className = 'flex items-center justify-between text-xs text-purple-200 mb-3';
                 const to = document.createElement('strong');
-                to.textContent = 'To: ' + draft.recipient;
+                to.textContent = 'To: ' + displayName(draft.recipient);
                 const badge = document.createElement('span');
                 badge.className = 'draft-badge rounded-full px-2 py-1';
                 badge.textContent = 'PRIVATE';
@@ -648,7 +649,7 @@
             editingDraftId = draft.id;
             currentRecipient = draft.recipient;
             currentColor = draft.color || '#38C944';
-            document.getElementById('recipientDisplayName').innerText = currentRecipient;
+            document.getElementById('recipientDisplayName').innerText = displayName(currentRecipient);
             document.getElementById('noteTextInput').value = draft.text;
             document.getElementById('noteColorContainer').style.backgroundColor = currentColor;
             document.querySelectorAll('.color-picker-dot').forEach(dot => {
@@ -764,7 +765,7 @@
                 card.innerHTML = `
                     <div class="flex items-center justify-between pb-1 border-b border-black font-bold">
                         <span class="bg-black text-white px-1 text-[10px]">ABC</span>
-                        <span class="text-xs">To: ${escapeHtml(msg.recipient)}</span>
+                        <span class="text-xs">To: ${escapeHtml(displayName(msg.recipient))}</span>
                         <i class="fa-solid fa-envelope text-xs"></i>
                     </div>
                     <div class="flex-grow my-1 p-2 font-bold text-sm text-black overflow-y-auto whitespace-pre-wrap break-words" style="background-color: ${safeColor(msg.color)}; font-family: 'Space Grotesk', sans-serif;">
