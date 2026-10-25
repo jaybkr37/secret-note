@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1e0836">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Unsent Notes">
     <title>Unsent Notes - janoona & aloo2a</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -69,6 +73,27 @@
         .color-picker-dot.active {
             border-color: #000000;
             transform: scale(1.15);
+        }
+
+        button, [onclick] { touch-action: manipulation; }
+        button { cursor: pointer; }
+        .mobile-action { min-height: 44px; }
+        .draft-badge { background: rgba(250, 204, 21, .16); color: #fde68a; border: 1px solid rgba(250,204,21,.3); }
+        .archive-action { border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 8px 12px; font-size: 12px; }
+        textarea { -webkit-appearance: none; border-radius: 0; }
+        @media (max-width: 480px) {
+            header { padding-left: 14px !important; padding-right: 14px !important; }
+            header span { font-size: 1rem !important; }
+            header button { padding: 8px 10px !important; font-size: 11px !important; }
+            main { padding: 16px 12px !important; align-items: flex-start !important; }
+            #selectionScreen { padding-top: 22px; }
+            #selectionScreen h1 { font-size: 1.85rem !important; }
+            #selectionScreen p { margin-bottom: 26px !important; }
+            .select-card { padding: 22px 16px !important; }
+            .note-textarea { font-size: 1.2rem; }
+            #editorScreen { padding-top: 6px; }
+            #unsentFrame { max-height: 68vh; }
+            #feedModal > div { padding: 16px !important; max-height: 90vh !important; }
         }
 
         /* Glassmorphic elements */
@@ -138,10 +163,14 @@
                 the unsent project
             </span>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleDraftsModal()" class="mobile-action px-4 py-2 rounded-full glass-box hover:bg-white/10 transition text-sm font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-file-pen text-pink-300"></i>
+                <span>Drafts (<span id="draftCount">0</span>)</span>
+            </button>
             <button onclick="toggleFeedModal()" class="px-4 py-2 rounded-full glass-box hover:bg-white/10 transition text-sm font-semibold flex items-center gap-2">
                 <i class="fa-solid fa-inbox text-purple-400"></i>
-                <span>Sent Archive (<span id="sentCount">0</span>)</span>
+                <span>Archive (<span id="sentCount">0</span>)</span>
             </button>
         </div>
     </header>
@@ -249,8 +278,11 @@
                 <!-- BOTTOM FOOTER -->
                 <div class="flex items-center justify-between pt-2 mt-1 border-t-2 border-black text-lg font-black">
                     <!-- Send Button -->
-                    <button onclick="sendLetter()" class="hover:opacity-75 transition-opacity px-1 active:scale-95">
-                        Send
+                    <button onclick="saveDraft()" class="mobile-action hover:opacity-75 transition-opacity px-1 active:scale-95 text-xs sm:text-sm">
+                        Save Draft
+                    </button>
+                    <button onclick="shareLetter()" class="mobile-action hover:opacity-75 transition-opacity px-1 active:scale-95">
+                        Share ↗
                     </button>
 
                     <!-- Hashtag -->
@@ -276,7 +308,7 @@
             <div class="flex justify-between items-center pb-4 border-b border-purple-800/50 mb-4">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-box-archive text-purple-400 text-xl"></i>
-                    <h3 class="text-xl font-bold text-white">Sent Archive</h3>
+                    <div><h3 class="text-xl font-bold text-white">Shared Archive</h3><p class="text-xs text-purple-200/70">History stored on this device; sharing is done through your phone's share sheet.</p></div>
                 </div>
                 <button onclick="toggleFeedModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
                     <i class="fa-solid fa-xmark"></i>
@@ -297,6 +329,25 @@
         </div>
     </div>
 
+    <!-- PRIVATE DRAFTS MODAL: drafts stay in this browser on this device -->
+    <div id="draftsModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+        <div class="glass-box w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 flex flex-col border border-pink-500/30 shadow-2xl">
+            <div class="flex justify-between items-center pb-4 border-b border-purple-800/50 mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-pink-300 text-xl"></i>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Private Drafts</h3>
+                        <p class="text-xs text-purple-200/70">Saved on this device/browser only</p>
+                    </div>
+                </div>
+                <button onclick="toggleDraftsModal()" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white" aria-label="Close drafts">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="draftGrid" class="flex-grow overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 pr-1"></div>
+        </div>
+    </div>
+
     <!-- SUCCESS TOAST NOTIFICATION -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white border-2 border-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
         <i class="fa-solid fa-circle-check text-green-400"></i>
@@ -308,22 +359,45 @@
         Inspired by The Unsent Project • Made with care
     </footer>
 
-    <!-- JavaScript Application Logic -->
+    <!-- JavaScript Application Logic. Drafts/archive use this browser's localStorage; they do not sync across devices. -->
     <script>
         // State management
         let currentRecipient = 'janoona';
         let currentColor = '#38C944'; // Default vibrant green from image
-        let sentMessages = JSON.parse(localStorage.getItem('unsent_messages') || '[]');
+        let sentMessages = readStoredArray('unsent_messages');
+        let drafts = readStoredArray('unsent_drafts');
+        let editingDraftId = null;
         let currentFilter = 'all';
+
+        function readStoredArray(key) {
+            try {
+                const value = JSON.parse(localStorage.getItem(key) || '[]');
+                return Array.isArray(value) ? value : [];
+            } catch (error) {
+                return [];
+            }
+        }
+        function persistArray(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+                return true;
+            } catch (error) {
+                showToast('Could not save. Check available device storage.', 'warning');
+                return false;
+            }
+        }
 
         // Initialize UI on load
         window.onload = function() {
             updateSentCount();
+            updateDraftCount();
             renderArchive();
+            renderDrafts();
         };
 
         // Open Letter Editor View
         function openLetterEditor(recipient) {
+            editingDraftId = null;
             currentRecipient = recipient;
             document.getElementById('recipientDisplayName').innerText = recipient;
             
@@ -371,6 +445,157 @@
             document.getElementById('charCounter').innerText = textarea.value.length;
         }
 
+        // Save a private draft locally on this device/browser.
+        function saveDraft() {
+            const text = document.getElementById('noteTextInput').value.trim();
+            if (!text) {
+                showToast('Write something before saving a draft.', 'warning');
+                return;
+            }
+            const existingIndex = drafts.findIndex(d => d.id === editingDraftId);
+            const draft = {
+                id: editingDraftId || Date.now(),
+                recipient: currentRecipient,
+                text,
+                color: currentColor,
+                updatedAt: new Date().toISOString()
+            };
+            if (existingIndex >= 0) drafts[existingIndex] = draft;
+            else drafts.unshift(draft);
+            if (!persistArray('unsent_drafts', drafts)) return;
+            editingDraftId = null;
+            updateDraftCount();
+            renderDrafts();
+            showToast('Private draft saved on this device.');
+            showHomeScreen();
+        }
+
+        function updateDraftCount() {
+            const count = document.getElementById('draftCount');
+            if (count) count.innerText = drafts.length;
+        }
+
+        function toggleDraftsModal() {
+            const modal = document.getElementById('draftsModal');
+            const opening = modal.classList.contains('hidden');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex', opening);
+            if (opening) renderDrafts();
+        }
+
+        function renderDrafts() {
+            const container = document.getElementById('draftGrid');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!drafts.length) {
+                container.innerHTML = '<div class="col-span-full text-center py-12 text-purple-200/70"><i class="fa-solid fa-lock text-3xl mb-3"></i><p>No private drafts yet.</p><p class="text-xs mt-2">Drafts stay in this browser on this device.</p></div>';
+                return;
+            }
+            drafts.forEach(draft => {
+                const card = document.createElement('div');
+                card.className = 'glass-box rounded-2xl p-4';
+                const preview = document.createElement('p');
+                preview.className = 'text-sm text-white whitespace-pre-wrap break-words mb-3';
+                preview.textContent = draft.text;
+                const heading = document.createElement('div');
+                heading.className = 'flex items-center justify-between text-xs text-purple-200 mb-3';
+                const to = document.createElement('strong');
+                to.textContent = 'To: ' + draft.recipient;
+                const badge = document.createElement('span');
+                badge.className = 'draft-badge rounded-full px-2 py-1';
+                badge.textContent = 'PRIVATE';
+                heading.append(to, badge);
+                const actions = document.createElement('div');
+                actions.className = 'flex flex-wrap gap-2';
+                const edit = document.createElement('button');
+                edit.className = 'archive-action text-white';
+                edit.textContent = 'Edit';
+                edit.onclick = () => editDraft(draft.id);
+                const share = document.createElement('button');
+                share.className = 'archive-action text-white';
+                share.textContent = 'Share…';
+                share.onclick = () => shareDraft(draft.id);
+                const del = document.createElement('button');
+                del.className = 'archive-action text-pink-200';
+                del.textContent = 'Delete';
+                del.onclick = () => deleteDraft(draft.id);
+                actions.append(edit, share, del);
+                card.append(heading, preview, actions);
+                container.appendChild(card);
+            });
+        }
+
+        function editDraft(id) {
+            const draft = drafts.find(d => d.id === id);
+            if (!draft) return;
+            editingDraftId = draft.id;
+            currentRecipient = draft.recipient;
+            currentColor = draft.color || '#38C944';
+            document.getElementById('recipientDisplayName').innerText = currentRecipient;
+            document.getElementById('noteTextInput').value = draft.text;
+            document.getElementById('noteColorContainer').style.backgroundColor = currentColor;
+            document.querySelectorAll('.color-picker-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.getAttribute('onclick')?.includes(currentColor));
+            });
+            updateCharCount();
+            toggleDraftsModal();
+            document.getElementById('selectionScreen').classList.add('hidden');
+            const editor = document.getElementById('editorScreen');
+            editor.classList.remove('hidden');
+            editor.classList.add('flex');
+        }
+
+        function deleteDraft(id) {
+            if (!confirm('Delete this private draft from this device?')) return;
+            drafts = drafts.filter(d => d.id !== id);
+            if (persistArray('unsent_drafts', drafts)) {
+                updateDraftCount();
+                renderDrafts();
+                showToast('Draft deleted.');
+            }
+        }
+
+        async function shareDraft(id) {
+            const draft = drafts.find(d => d.id === id);
+            if (!draft) return;
+            const payload = { title: 'Unsent Note for ' + draft.recipient, text: draft.text };
+            try {
+                if (navigator.share) await navigator.share(payload);
+                else if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(payload.title + '\\n\\n' + payload.text);
+                    showToast('Note copied. Paste it into a message.');
+                } else {
+                    window.prompt('Copy your note:', payload.title + '\\n\\n' + payload.text);
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') showToast('Could not open sharing options.', 'warning');
+            }
+        }
+
+        // Opens the phone/browser share sheet. This does not automatically deliver to a recipient.
+        async function shareLetter() {
+            const textarea = document.getElementById('noteTextInput');
+            const text = textarea.value.trim();
+            if (!text) {
+                showToast('Write a message before sharing.', 'warning');
+                return;
+            }
+            const payload = { title: 'Unsent Note for ' + currentRecipient, text };
+            try {
+                if (navigator.share) {
+                    await navigator.share(payload);
+                    showToast('Share sheet opened.');
+                } else if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(payload.title + '\\n\\n' + text);
+                    showToast('Copied. Paste it into a message.');
+                } else {
+                    window.prompt('Copy your note:', payload.title + '\\n\\n' + text);
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') showToast('Could not open sharing options.', 'warning');
+            }
+        }
+
         // Send Letter Function with Animation
         function sendLetter() {
             const textarea = document.getElementById('noteTextInput');
@@ -402,7 +627,7 @@
 
             // After animation completes
             setTimeout(() => {
-                showToast(`Unsent note delivered to ${currentRecipient}!`);
+                showToast(`Note saved to this device’s shared archive.`);
                 showHomeScreen();
                 renderArchive();
             }, 750);
@@ -488,8 +713,23 @@
                         <span class="opacity-70">${msg.timestamp}</span>
                     </div>
                 `;
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'archive-action mt-2 self-start text-red-700 bg-white';
+                deleteButton.textContent = 'Delete from archive';
+                deleteButton.onclick = () => deleteArchivedMessage(msg.id);
+                card.appendChild(deleteButton);
                 container.appendChild(card);
             });
+        }
+
+        function deleteArchivedMessage(id) {
+            if (!confirm('Delete this archived note from this device?')) return;
+            sentMessages = sentMessages.filter(m => m.id !== id);
+            if (persistArray('unsent_messages', sentMessages)) {
+                updateSentCount();
+                renderArchive();
+                showToast('Archived note deleted.');
+            }
         }
 
         // Helper to prevent HTML injection
