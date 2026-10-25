@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsent Notes - janoona & aloo2a</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e0836 0%, #320d58 50%, #150228 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .unsent-frame {
+            background-color: #ffffff;
+            border: 4px solid #000000;
+            box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.4);
+            font-family: 'Space Grotesk', sans-serif;
+            color: #000000;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .note-textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            resize: none;
+            font-weight: 600;
+            color: #000000;
+            font-size: 1.6rem;
+            line-height: 1.25;
+            padding: 12px;
+            font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+        }
+
+        .note-textarea::placeholder {
+            color: rgba(0, 0, 0, 0.4);
+            font-style: italic;
+        }
+
+        .color-picker-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .color-picker-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .color-picker-dot.active {
+            border-color: #000000;
+            transform: scale(1.15);
+        }
+
+        /* Glassmorphic elements */
+        .glass-box {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Card Hover Animations */
+        .select-card {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .select-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(147, 51, 234, 0.35);
+        }
+
+        /* Send Flying Effect Animation */
+        @keyframes flyOut {
+            0% {
+                transform: scale(1) translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            30% {
+                transform: scale(0.9) translateY(20px) rotate(-3deg);
+            }
+            100% {
+                transform: scale(0.2) translateY(-800px) rotate(15deg);
+                opacity: 0;
+            }
+        }
+
+        .sending-anim {
+            animation: flyOut 0.8s forwards ease-in-out;
+        }
+
+        /* Custom Scrollbar for feed */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header Navigation Bar -->
+    <header class="w-full py-6 px-6 md:px-12 flex justify-between items-center z-10 border-b border-purple-900/40">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showHomeScreen()">
+            <div class="bg-purple-600 p-2 rounded-lg text-white font-black text-xl tracking-tighter">
+                #UP
+            </div>
+            <span class="font-bold text-xl md:text-2xl tracking-tight text-white/90 hover:text-white transition">
+                the unsent project
+            </span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button onclick="toggleFeedModal()" class="px-4 py-2 rounded-full glass-box hover:bg-white/10 transition text-sm font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-inbox text-purple-400"></i>
+                <span>Sent Archive (<span id="sentCount">0</span>)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow flex items-center justify-center p-4 md:p-8 relative">
+
+        <!-- STEP 1: SELECT RECIPIENT SCREEN -->
+        <section id="selectionScreen" class="w-full max-w-4xl mx-auto text-center flex flex-col items-center justify-center">
+            <h1 class="text-3xl md:text-5xl font-black mb-3 tracking-tight bg-gradient-to-r from-purple-200 via-pink-200 to-purple-400 bg-clip-text text-transparent">
+                Who is this letter for?
+            </h1>
+            <p class="text-purple-200/80 mb-10 max-w-md text-sm md:text-base">
+                Select a person to write an anonymous unsent note. It will automatically be delivered to their archive.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl px-4">
+                <!-- Box 1: janoona -->
+                <div onclick="openLetterEditor('janoona')" class="select-card cursor-pointer glass-box p-8 rounded-2xl border border-purple-400/30 flex flex-col items-center justify-center group relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-purple-500/20 rounded-full blur-2xl group-hover:bg-purple-500/40 transition"></div>
+                    
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-3xl font-black shadow-lg mb-6 group-hover:scale-110 transition duration-300">
+                        J
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">janoona</h2>
+                    <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-4">Click to write note</p>
+                    
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-xs font-medium text-purple-200 group-hover:bg-white/20 transition">
+                        <i class="fa-solid fa-pen-nib text-xs"></i> Write to janoona
+                    </span>
+                </div>
+
+                <!-- Box 2: aloo2a -->
+                <div onclick="openLetterEditor('aloo2a')" class="select-card cursor-pointer glass-box p-8 rounded-2xl border border-purple-400/30 flex flex-col items-center justify-center group relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-pink-500/20 rounded-full blur-2xl group-hover:bg-pink-500/40 transition"></div>
+                    
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-3xl font-black shadow-lg mb-6 group-hover:scale-110 transition duration-300">
+                        A
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">aloo2a</h2>
+                    <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-4">Click to write note</p>
+                    
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-xs font-medium text-purple-200 group-hover:bg-white/20 transition">
+                        <i class="fa-solid fa-pen-nib text-xs"></i> Write to aloo2a
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 2: LETTER EDITOR SCREEN (Matches the Unsent Project exact layout) -->
+        <section id="editorScreen" class="w-full max-w-md mx-auto hidden flex-col items-center my-auto py-4">
+            
+            <!-- Color Selector Bar -->
+            <div class="flex items-center justify-between w-full max-w-[360px] mb-4 bg-black/40 backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10">
+                <span class="text-xs text-purple-200/80 font-medium">Card Color:</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="changeNoteColor('#38C944', this)" class="color-picker-dot active" style="background-color: #38C944;" title="Vibrant Green"></button>
+                    <button onclick="changeNoteColor('#FF5E5E', this)" class="color-picker-dot" style="background-color: #FF5E5E;" title="Coral Red"></button>
+                    <button onclick="changeNoteColor('#4DA1FF', this)" class="color-picker-dot" style="background-color: #4DA1FF;" title="Sky Blue"></button>
+                    <button onclick="changeNoteColor('#FFB800', this)" class="color-picker-dot" style="background-color: #FFB800;" title="Warm Yellow"></button>
+                    <button onclick="changeNoteColor('#E062FF', this)" class="color-picker-dot" style="background-color: #E062FF;" title="Bright Pink"></button>
+                </div>
+            </div>
+
+            <!-- UNSENT PROJECT FRAME -->
+            <div id="unsentFrame" class="unsent-frame w-full max-w-[360px] p-3 rounded-none flex flex-col justify-between" style="aspect-ratio: 4/5;">
+                
+                <!-- TOP HEADER -->
+                <div class="flex items-center justify-between pb-2 mb-2 border-b-2 border-black">
+                    <!-- ABC Badge -->
+                    <div class="bg-black text-white px-2 py-0.5 font-black text-xl tracking-tighter leading-none flex items-center">
+                        ABC
+                    </div>
+
+                    <!-- To: Recipient Label -->
+                    <div class="text-xl font-bold flex items-center gap-1">
+                        <span>To:</span>
+                        <span id="recipientDisplayName" class="underline decoration-2">janoona</span>
+                    </div>
+
+                    <!-- Envelope Icon -->
+                    <div class="bg-black text-white p-1 flex items-center justify-center">
+                        <svg class="w-6 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l9 6 9-6"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- MIDDLE CONTENT BOX (COLOR BLOCK) -->
+                <div id="noteColorContainer" class="flex-grow my-1 p-2 relative flex flex-col transition-colors duration-300" style="background-color: #38C944;">
+                    <textarea 
+                        id="noteTextInput" 
+                        class="note-textarea" 
+                        placeholder="Type your unsent message here..."
+                        maxlength="280"
+                        oninput="updateCharCount()"
+                    ></textarea>
+                    
+                    <div class="text-right text-[10px] font-bold opacity-60 px-2 pb-1 text-black">
+                        <span id="charCounter">0</span>/280
+                    </div>
+                </div>
+
+                <!-- BOTTOM FOOTER -->
+                <div class="flex items-center justify-between pt-2 mt-1 border-t-2 border-black text-lg font-black">
+                    <!-- Send Button -->
+                    <button onclick="sendLetter()" class="hover:opacity-75 transition-opacity px-1 active:scale-95">
+                        Send
+                    </button>
+
+                    <!-- Hashtag -->
+                    <div class="text-sm md:text-base font-bold tracking-tight">
+                        #unsentproject
+                    </div>
+
+                    <!-- Back Button -->
+                    <button onclick="showHomeScreen()" class="hover:opacity-75 transition-opacity px-1 active:scale-95">
+                        Back
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- SENT ARCHIVE / FEED MODAL -->
+    <div id="feedModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-box w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 flex flex-col border border-purple-500/30 shadow-2xl">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center pb-4 border-b border-purple-800/50 mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-box-archive text-purple-400 text-xl"></i>
+                    <h3 class="text-xl font-bold text-white">Sent Archive</h3>
+                </div>
+                <button onclick="toggleFeedModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Feed Tabs -->
+            <div class="flex gap-2 mb-4 border-b border-white/10 pb-2">
+                <button onclick="filterArchive('all')" id="tab-all" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white">All Notes</button>
+                <button onclick="filterArchive('janoona')" id="tab-janoona" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20">To janoona</button>
+                <button onclick="filterArchive('aloo2a')" id="tab-aloo2a" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20">To aloo2a</button>
+            </div>
+
+            <!-- Messages Grid -->
+            <div id="archiveGrid" class="flex-grow overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 pr-1">
+                <!-- Dynamic cards render here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white border-2 border-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toastMessage">Sent successfully!</span>
+    </div>
+
+    <!-- Footer Tagline -->
+    <footer class="py-4 text-center text-xs text-purple-300/40">
+        Inspired by The Unsent Project • Made with care
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State management
+        let currentRecipient = 'janoona';
+        let currentColor = '#38C944'; // Default vibrant green from image
+        let sentMessages = JSON.parse(localStorage.getItem('unsent_messages') || '[]');
+        let currentFilter = 'all';
+
+        // Initialize UI on load
+        window.onload = function() {
+            updateSentCount();
+            renderArchive();
+        };
+
+        // Open Letter Editor View
+        function openLetterEditor(recipient) {
+            currentRecipient = recipient;
+            document.getElementById('recipientDisplayName').innerText = recipient;
+            
+            // Switch views smoothly
+            const selectScreen = document.getElementById('selectionScreen');
+            const editorScreen = document.getElementById('editorScreen');
+            
+            selectScreen.classList.add('hidden');
+            editorScreen.classList.remove('hidden');
+            editorScreen.classList.add('flex');
+
+            // Reset textarea
+            const textarea = document.getElementById('noteTextInput');
+            textarea.value = '';
+            updateCharCount();
+            textarea.focus();
+        }
+
+        // Return to main screen
+        function showHomeScreen() {
+            const selectScreen = document.getElementById('selectionScreen');
+            const editorScreen = document.getElementById('editorScreen');
+            const frame = document.getElementById('unsentFrame');
+
+            frame.classList.remove('sending-anim');
+            editorScreen.classList.add('hidden');
+            editorScreen.classList.remove('flex');
+            selectScreen.classList.remove('hidden');
+        }
+
+        // Change background color of note block
+        function changeNoteColor(colorHex, buttonElem) {
+            currentColor = colorHex;
+            document.getElementById('noteColorContainer').style.backgroundColor = colorHex;
+            
+            // Update active state on picker buttons
+            const dots = document.querySelectorAll('.color-picker-dot');
+            dots.forEach(dot => dot.classList.remove('active'));
+            if(buttonElem) buttonElem.classList.add('active');
+        }
+
+        // Character count tracker
+        function updateCharCount() {
+            const textarea = document.getElementById('noteTextInput');
+            document.getElementById('charCounter').innerText = textarea.value.length;
+        }
+
+        // Send Letter Function with Animation
+        function sendLetter() {
+            const textarea = document.getElementById('noteTextInput');
+            const text = textarea.value.trim();
+
+            if (!text) {
+                showToast("Please write a message before sending!", "warning");
+                return;
+            }
+
+            const frame = document.getElementById('unsentFrame');
+            
+            // Trigger animation
+            frame.classList.add('sending-anim');
+
+            // Create message record
+            const newMessage = {
+                id: Date.now(),
+                recipient: currentRecipient,
+                text: text,
+                color: currentColor,
+                timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            };
+
+            // Save message
+            sentMessages.unshift(newMessage);
+            localStorage.setItem('unsent_messages', JSON.stringify(sentMessages));
+            updateSentCount();
+
+            // After animation completes
+            setTimeout(() => {
+                showToast(`Unsent note delivered to ${currentRecipient}!`);
+                showHomeScreen();
+                renderArchive();
+            }, 750);
+        }
+
+        // Show Toast Message
+        function showToast(msg, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Update total counter
+        function updateSentCount() {
+            document.getElementById('sentCount').innerText = sentMessages.length;
+        }
+
+        // Toggle Sent Archive Modal
+        function toggleFeedModal() {
+            const modal = document.getElementById('feedModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Filter Archive Messages
+        function filterArchive(recipient) {
+            currentFilter = recipient;
+            
+            // Update tab styles
+            ['all', 'janoona', 'aloo2a'].forEach(tab => {
+                const btn = document.getElementById(`tab-${tab}`);
+                if (tab === recipient) {
+                    btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white";
+                } else {
+                    btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-purple-200 hover:bg-white/20";
+                }
+            });
+
+            renderArchive();
+        }
+
+        // Render Archive Items
+        function renderArchive() {
+            const container = document.getElementById('archiveGrid');
+            container.innerHTML = '';
+
+            const filtered = currentFilter === 'all' 
+                ? sentMessages 
+                : sentMessages.filter(m => m.recipient === currentFilter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-purple-300/50">
+                        <i class="fa-solid fa-paper-plane text-3xl mb-2"></i>
+                        <p class="text-sm">No unsent notes here yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(msg => {
+                const card = document.createElement('div');
+                card.className = "unsent-frame p-2 text-xs flex flex-col justify-between";
+                card.style.aspectRatio = "4/5";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between pb-1 border-b border-black font-bold">
+                        <span class="bg-black text-white px-1 text-[10px]">ABC</span>
+                        <span class="text-xs">To: ${msg.recipient}</span>
+                        <i class="fa-solid fa-envelope text-xs"></i>
+                    </div>
+                    <div class="flex-grow my-1 p-2 font-bold text-sm text-black overflow-y-auto whitespace-pre-wrap break-words" style="background-color: ${msg.color}; font-family: 'Space Grotesk', sans-serif;">
+                        ${escapeHtml(msg.text)}
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-black text-[10px] font-bold">
+                        <span>#unsentproject</span>
+                        <span class="opacity-70">${msg.timestamp}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Helper to prevent HTML injection
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
